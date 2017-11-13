@@ -1,0 +1,150 @@
+## Canvas 绘制文字 : drawText() drawTextRun() 和 drawTextOnPath()
+	* drawText(String text, float x, float y, Paint paint): 
+		x 和 y 是文字的坐标。但这个坐标并不是文字的左上角，而是一个与左下角再往左一点的位置;
+		x：比字符的左边再往左一点点，因为字符的左右两边会留出一部分空隙，用于文字之间的间隔，以及文字和边框的间隔
+		y：就是指定的基线 basaline 的位置。
+
+	- (不常用)drawTextRun(CharSequence text, int start, int end, int contextStart, int contextEnd, float x, float y, boolean isRtl, Paint paint)：
+	  API 23 新加入的方法， 和 drawText() 一样都是绘制文字，但加入了两项额外的设置——上下文和文字方向——用于辅助一些文字结构比较特殊的语言的绘制
+	  应用：有些语言的文字，字符的形状会互相之间影响：一个字你单独写是一个样，和别的字放在一起写又是另外一个样（中文和英文没有这种情况）
+		参数： 
+			text：	要绘制的文字 
+			start： 从那个字开始绘制 
+			end：  	绘制到哪个字结束 
+			contextStart： 	上下文的起始位置。contextStart 需要小于等于 start 
+			contextEnd： 	上下文的结束位置。contextEnd 需要大于等于 end 
+			x： 	文字左边的坐标 
+			y： 	文字的基线坐标 
+			isRtl：	是否是 RTL（Right-To-Left，从右向左）
+
+	* drawTextOnPath(String text, Path path, float hOffset, float vOffset, Paint paint)：沿着一条 Path 来绘制文字
+		原则：使用的 Path ，拐弯处全用圆角，别用尖角，否则转弯处文字会变形
+		参数：hOffset 和 vOffset。它们是文字相对于 Path 的水平偏移量和竖直偏移量，利用它们可以调整文字的位置
+
+	*  StaticLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad)：绘制多行文字，当文字达到设置的最大宽度 或者 识别文字中的 /n ，自动换行
+	   StaticLayout 并不是一个 View 或者 ViewGroup ，而是 android.text.Layout 的子类，它是纯粹用来绘制文字的
+		参数：
+			idth 	文字区域的宽度，文字到达这个宽度后就会自动换行； 
+			align 	文字的对齐方向； 
+			spacingmult 行间距的倍数，通常情况下填 1 就好； 
+			spacingadd 	行间距的额外增加值，通常情况下填 0 就好； 
+			includeadd 	指是否在文字上下添加额外的空间，来避免某些过高的字符的绘制出现越界。
+		使用： 
+			String text1 = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.";  
+			StaticLayout staticLayout1 = new StaticLayout(text1, paint, 600, Layout.Alignment.ALIGN_NORMAL, 1, 0, true);
+			String text2 = "a\nbc\ndefghi\njklm\nnopqrst\nuvwx\nyz";  
+			StaticLayout staticLayout2 = new StaticLayout(text2, paint, 600, Layout.Alignment.ALIGN_NORMAL, 1, 0, true);
+			...
+			canvas.save();  
+			canvas.translate(50, 100);  
+			staticLayout1.draw(canvas);  
+			canvas.translate(0, 200);  
+			staticLayout2.draw(canvas);  
+			canvas.restore();  
+
+
+## Paint 对文字绘制的辅助:
+	# 效果类：
+		* setTextSize(float textSize)
+
+		* setTypeface(Typeface typeface)：设置字体
+
+		* setFakeBoldText(boolean fakeBoldText)：是否使用伪粗体，并不是通过选用更高 weight 的字体让文字变粗，而是通过程序在运行时把文字给「描粗」
+
+		* setStrikeThruText(boolean strikeThruText)：是否增加删除线
+
+		* setUnderlineText(boolean underlineText)：是否增加下划线
+
+		* setTextSkewX(float skewX)：设置文字倾斜度
+
+		* setTextScaleX(float scaleX)：设置文字横向缩放，也就是文字的胖瘦
+
+		* setLetterSpacing(float letterSpacing)：设置文字间距，默认是 0
+
+		* setFontFeatureSettings(String settings)：用 CSS 的 font-feature-settings 的方式来设置文字。
+
+		* setTextAlign(Paint.Align align)：设置文字的对齐方式。Paint.Align 有三个值 ：LEFT CETNER 和 RIGHT。默认值为 LEFT。
+
+		* setTextLocale(Locale locale) / setTextLocales(LocaleList locales)：设置绘制所使用的 Locale（地域，语言区域）。
+			系统语言不同，同样的一个字的显示就有可能不同。Canvas 绘制的时候， 默认使用系统里设置的 Locale，通过此方法可以在不改变系统设置的情况下，直接修改绘制时的 Locale
+
+		- (不常用)setHinting(int mode)：设置是否启用字体的 hinting （字体微调）。
+			 Android 设备大多数都是是用的矢量字体，通过向字体中加入 hinting 信息，让矢量字体在尺寸过小的时候得到针对性的修正，从而提高显示效果
+			 不过在现在手机屏幕的像素密度已经非常高，几乎不会再出现字体尺寸小到需要靠 hinting 来修正的情况，所以这个方法其实基本没用了
+
+		- (不常用)setElegantTextHeight(boolean elegant)：1.把「大高个」文字的高度恢复为原始高度。2.增大每行文字的上下边界，来容纳被加高了的文字。
+
+		- (不常用)setSubpixelText(boolean subpixelText)：是否开启次像素级的抗锯齿（ sub-pixel anti-aliasing ）。
+
+		- (不常用)setLinearText(boolean linearText)：不知道干嘛的
+
+	# 测量文字尺寸类：由于文字的绘制和图形或 Bitmap 的绘制比起来，尺寸的计算复杂得多，所以它有一整套的方法来计算文字尺寸
+		*  float getFontSpacing()：获取推荐的行距，即推荐的两行文字的 baseline 的距离
+			作用：当要手动绘制多行文字（而不是使用 StaticLayout）的时候，可以在换行的时候给 y 坐标加上这个值来下移文字。
+
+		* FontMetircs getFontMetrics()：获取 Paint 的 FontMetrics。
+			* FontMetrics 是个相对专业的工具类，它提供了几个文字排印方面的数值：ascent, descent, top, bottom,  leading，都是 float 类型
+				- baseline: 文字显示的基准线。
+				- ascent / descent: 上作用是限制普通字符的顶部和底部范围。 
+					普通的字符，上不会高过 ascent ，下不会低过 descent ，例如上图中大部分的字形都显示在 ascent 和  descent 两条线的范围内。具体到 Android 的绘制中， ascent 的值是和 baseline 的相对位移，它的值为负（因为它在 baseline 的上方）； descent 的值是图中橙线和 baseline 相对位移，值为正（因为它在 baseline 的下方）。
+				- top / bottom: 作用是限制所有字形（ glyph ）的顶部和底部范围。 
+					除了普通字符，有些字形的显示范围是会超过 ascent 和 descent 的，而 top 和 bottom 则限制的是所有字形的显示范围，包括这些特殊字形。例如上图的第二行文字里，就有两个泰文的字形分别超过了  ascent 和 descent 的限制，但它们都在 top 和 bottom 两条线的范围内。具体到 Android 的绘制中，  top 的值是图中蓝线和 baseline 的相对位移，它的值为负（因为它在 baseline 的上方）； bottom 的值是图中红线和 baseline 相对位移，值为正（因为它在 baseline 的下方）。
+				- leading: 指的是行的额外间距，即对于上下相邻的两行，上行的 bottom 线和下行的 top 线的距离。
+
+			PS：ascent 和 descent 这两个值还可以通过 Paint.ascent() 和 Paint.descent() 来快捷获取
+
+			* FontMetrics 和 getFontSpacing() 获得的值的区别：
+				问题：由 FontMetrics 获得的 bottom - top + leading 的结果是要大于 getFontSpacing() 的返回值
+				原因：getFontSpacing() 的结果是在两行文字不显得拥挤的前提下缩短行距，以此来得到更好的显示效果来计算出来的结果， 并不是通过 FontMetrics 的标准值计算出来的。
+				使用：如果要对文字手动换行绘制，多数时候应该选取 getFontSpacing() 来得到行距，不但使用更简单，显示效果也会更好
+	
+			* getFontMetricsInt() 和  getFontMetricsInt(FontMetricsInt fontMetrics) ，用于获取 FontMetricsInt 类型的结果
+
+		* getTextBounds(String text, int start, int end, Rect bounds)：获取文字的显示范围
+			参数：text 是要测量的文字，start 和 end 分别是文字的起始和结束位置，bounds 是存储文字显示范围的对象，在测算完成后会把结果写进 bounds
+
+		* float measureText(String text)：测量文字绘制时所占用的宽度，是要大于文字显示的宽度。
+			一个文字在界面中，往往需要占用比他的实际显示宽度更多一点的宽度，以此来让文字和文字之间保留一些间距，不会显得过于拥挤。
+			因此 measureText（）比 getTextBounds（）获得的宽度要大一些
+
+		* getTextWidths(String text, float[] widths)：获取字符串中每个字符的宽度，并把结果填入参数 widths。
+			等价于对字符串中的每个字符分别调用 measureText() ，并把它们的计算结果分别填入 widths 的不同元素
+
+		* int breakText(String text, boolean measureForwards, float maxWidth, float[] measuredWidth)：在给出宽度上限的前提下测量文字的宽度，如果文字的宽度超出了上限，那么在临近超限的位置截断文
+			参数：
+				text 			要测量的文字
+				measureForwards 示文字的测量方向，true 表示由左往右测量
+				maxWidth 		给出的宽度上限
+				measuredWidth 	用于接受数据，方法测量完成后会把截取的文字宽度（如果宽度没有超限，则为文字总宽度）赋值给 measuredWidth[0]
+
+
+		#（光标相关的 API）
+
+		* float getRunAdvance(CharSequence text, int start, int end, int contextStart, int contextEnd, boolean isRtl, int offset)：计算出某个字符处光标的 x 坐标
+			参数：
+				tart，end  是文字的起始和结束坐标
+				contextStart，contextEnd   是上下文的起始和结束坐标
+				isRtl 	   是文字的方向
+				offset 	   是字数的偏移，即计算第几个字符处的光标
+			例子：
+				int length = text.length();  
+				// 获取光标的 x 坐标
+				float advance = paint.getRunAdvance(text, 0, length, 0, length, false, length);  
+				canvas.drawText(text, offsetX, offsetY, paint);  
+				// 绘制光标
+				canvas.drawLine(offsetX + advance, offsetY - 50, offsetX + advance, offsetY + 10, paint);  
+			原理: 本质也是一个测量文字宽度的方法。上面这个例子中，start 和  contextStart 都是 0， end contextEnd 和 offset 都等于 text.length()。在这种情况下，它是等价于  measureText(text) 的，即完整测量一段文字的宽度。而对于更复杂的需求，getRunAdvance() 能做的事就比  measureText() 多了。
+
+		* float getOffsetForAdvance(CharSequence text, int start, int end, int contextStart, int contextEnd, boolean isRtl, float advance)：给出一个位置的像素值，计算出文字中最接近这个位置的字符偏移量（即第几个字符最接近这个坐标）。
+			参数：advance 是给出的位置的像素值
+
+		* boolean hasGlyph(String string)：检查指定的字符串中是否是一个单独的字形 (glyph）。
+			例：
+				原字符串						对应的显示						hasGlyph()返回值
+				a 								a 								true
+				b 								b 								true
+				ab								ab(两个字符不算一个字形) 		false
+				\uD83C\uDDE8\uD83C\uDDF3		emoji的国旗表情 				true
+	
+
+			
